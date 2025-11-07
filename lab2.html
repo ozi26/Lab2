@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Country Search Grid</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    nav {
+      text-align: right;
+      padding: 10px 20px;
+    }
+
+    nav a {
+      text-decoration: none;
+      margin-left: 15px;
+      color: #000;
+    }
+
+    main {
+      margin-top: 80px;
+    }
+
+    form {
+      position: relative;
+      display: inline-block;
+    }
+
+    #search {
+      width: 450px;
+      padding: 10px 18px;
+      border-radius: 25px;
+      border: 1px solid #aaa;
+      font-size: 18px;
+    }
+
+    #suggestions {
+      position: absolute;
+      top: 48px;
+      width: 450px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      display: none;
+    }
+
+    #suggestions p {
+      padding: 10px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    #suggestions p:hover {
+      background: #f2f2f2;
+    }
+
+    #grid {
+      margin-top: 40px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .grid-item {
+      background: #2a9b08;
+      padding: 10px 18px;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <a href="#">Gmail</a>
+    <a href="#">Images</a>
+    <a href="#">I</a>
+    <a href="#">P</a>
+  </nav>
+
+  <main>
+    <form id="searchForm">
+      <input id="search" type="text" placeholder="Search countries..." autocomplete="off">
+      <div id="suggestions"></div>
+    </form>
+
+    <div id="grid"></div>
+  </main>
+
+  <script>
+    const searchInput = document.getElementById("search");
+    const suggestionsBox = document.getElementById("suggestions");
+    const grid = document.getElementById("grid");
+
+    let allCountries = [];
+    let selectedCountry = null;
+    const gridItems = new Set();
+
+    //  Fetch country list ONCE
+    async function loadCountries() {
+      const res = await fetch("https://countriesnow.space/api/v0.1/countries");
+      const data = await res.json();
+      allCountries = data.data.map(c => c.country);
+    }
+
+    loadCountries();
+
+
+    // Filter and show suggestions
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+      if (!query) return hideSuggestions();
+
+      const matches = allCountries
+        .filter(c => c.toLowerCase().includes(query))
+        .slice(0, 5);
+
+      renderSuggestions(matches);
+    });
+
+
+    function renderSuggestions(list) {
+      suggestionsBox.innerHTML = "";
+      if (list.length === 0) return hideSuggestions();
+
+      list.forEach(country => {
+        const el = document.createElement("p");
+        el.textContent = country;
+        el.onclick = () => selectSuggestion(country);
+        suggestionsBox.appendChild(el);
+      });
+
+      suggestionsBox.style.display = "block";
+    }
+
+
+    function selectSuggestion(country) {
+      selectedCountry = country;
+      searchInput.value = country;
+      hideSuggestions();
+    }
+
+
+    function hideSuggestions() {
+      suggestionsBox.style.display = "none";
+      suggestionsBox.innerHTML = "";
+    }
+
+
+    // Add selected country on Enter
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && selectedCountry) {
+        e.preventDefault();
+        addToGrid(selectedCountry);
+        searchInput.value = "";
+        selectedCountry = null;
+        hideSuggestions();
+      }
+    });
+
+
+    function addToGrid(country) {
+      if (gridItems.has(country)) return;
+
+      gridItems.add(country);
+
+      const div = document.createElement("div");
+      div.className = "grid-item";
+      div.textContent = country;
+      grid.appendChild(div);
+    }
+  </script>
+
+</body>
+</html>
